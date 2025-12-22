@@ -32,32 +32,120 @@ const createStudent = async (req, res) => {
         });
 
         // 2. Determine initial fees
-        let initialCollegeFee = 0;
+        let annualCollegeFee = 0;
 
         if (quota === 'management') {
-            initialCollegeFee = assignedCollegeFee || 0;
+            annualCollegeFee = assignedCollegeFee || 0;
         } else {
             // Fetch Default Gov Fee
             const config = await SystemConfig.findOne({ key: 'default_gov_fee' });
-            initialCollegeFee = config ? config.value : 0;
+            annualCollegeFee = config ? config.value : 0;
         }
 
-        let initialTransportFee = 0;
+        let annualTransportFee = 0;
         if (transportOpted) {
-            initialTransportFee = assignedTransportFee || 0;
+            annualTransportFee = assignedTransportFee || 0;
         }
 
-        // 3. Create Student Profile
+        // 3. Generate Fee Ledger (Current & Historical)
+        const feeRecords = [];
+        const startYear = (entry === 'lateral') ? 2 : 1;
+        const currentYearNum = Number(currentYear);
+
+        // A. Historical Years (Mark as PAID)
+        for (let y = startYear; y < currentYearNum; y++) {
+            const semA = (y * 2) - 1;
+            const semB = y * 2;
+            const termFee = Math.ceil(annualCollegeFee / 2);
+
+            // Sem A
+            feeRecords.push({
+                year: y,
+                semester: semA,
+                feeType: 'college',
+                amountDue: termFee,
+                amountPaid: termFee, // Fully Paid
+                status: 'paid',
+                transactions: [{
+                    amount: termFee,
+                    date: new Date(),
+                    mode: 'Migration',
+                    reference: 'Historical Data - Pre-paid'
+                }]
+            });
+
+            // Sem B
+            feeRecords.push({
+                year: y,
+                semester: semB,
+                feeType: 'college',
+                amountDue: annualCollegeFee - termFee, // Remainder
+                amountPaid: annualCollegeFee - termFee,
+                status: 'paid',
+                transactions: [{
+                    amount: annualCollegeFee - termFee,
+                    date: new Date(),
+                    mode: 'Migration',
+                    reference: 'Historical Data - Pre-paid'
+                }]
+            });
+        }
+
+        // B. Current Year (Mark as PENDING)
+        // Only generate if we have a fee
+        if (annualCollegeFee > 0) {
+            const semA = (currentYearNum * 2) - 1;
+            const semB = currentYearNum * 2;
+            const termFee = Math.ceil(annualCollegeFee / 2);
+
+            feeRecords.push({
+                year: currentYearNum,
+                semester: semA,
+                feeType: 'college',
+                amountDue: termFee,
+                amountPaid: 0,
+                status: 'pending',
+                transactions: []
+            });
+
+            feeRecords.push({
+                year: currentYearNum,
+                semester: semB,
+                feeType: 'college',
+                amountDue: annualCollegeFee - termFee,
+                amountPaid: 0,
+                status: 'pending',
+                transactions: []
+            });
+        }
+
+        // Transport Fee Record (Current Year Only - assuming annual one-time or split?)
+        // Let's simplified: 1 record for transport per year usually, or split?
+        // Code implies 'transportFeeDue' top level. Let's add a single record for Transport for current year.
+        if (transportOpted && annualTransportFee > 0) {
+            feeRecords.push({
+                year: currentYearNum,
+                semester: (currentYearNum * 2) - 1, // Attach to odd sem
+                feeType: 'transport',
+                amountDue: annualTransportFee,
+                amountPaid: 0,
+                status: 'pending',
+                transactions: []
+            });
+        }
+
+        // 4. Create Student Profile
         const student = await Student.create({
             user: user._id,
             usn: username,
             department,
-            currentYear: Number(currentYear),
+            currentYear: currentYearNum,
             quota,
             entry,
             transportOpted: transportOpted || false,
-            collegeFeeDue: initialCollegeFee,
-            transportFeeDue: initialTransportFee
+            collegeFeeDue: annualCollegeFee, // Current Year Due
+            transportFeeDue: annualTransportFee, // Current Year Due
+            feeRecords: feeRecords
         });
 
         res.status(201).json(student);

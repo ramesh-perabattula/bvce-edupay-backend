@@ -7,7 +7,7 @@ dotenv.config();
 
 connectDB();
 
-const importData = async () => {
+const seedUsers = async () => {
     try {
         // Check if admin exists
         const adminExists = await User.findOne({ role: 'admin' });
@@ -20,9 +20,7 @@ const importData = async () => {
                 name: 'System Admin',
                 email: 'admin@college.edu'
             });
-            console.log('Admin User Created: username=admin, password=adminpassword123');
-        } else {
-            console.log('Admin User already exists');
+            console.log('Admin User Created');
         }
 
         // Check if exam head exists
@@ -36,9 +34,7 @@ const importData = async () => {
                 name: 'Chief Examiner',
                 email: 'examhead@college.edu'
             });
-            console.log('Exam Head User Created: username=examhead, password=examheadpassword123');
-        } else {
-            console.log('Exam Head User already exists');
+            console.log('Exam Head User Created');
         }
 
         // Check if transport dept exists
@@ -52,9 +48,7 @@ const importData = async () => {
                 name: 'Transport Officer',
                 email: 'transport@college.edu'
             });
-            console.log('Transport User Created: username=transport, password=transportpassword123');
-        } else {
-            console.log('Transport User already exists');
+            console.log('Transport User Created');
         }
 
         // Check if registrar exists
@@ -68,16 +62,22 @@ const importData = async () => {
                 name: 'Student Registrar',
                 email: 'registrar@college.edu'
             });
-            console.log('Registrar User Created: username=registrar, password=registrarpassword123');
-        } else {
-            console.log('Registrar User already exists');
+            console.log('Registrar User Created');
         }
 
-        process.exit();
     } catch (error) {
-        console.error(`${error}`);
-        process.exit(1);
+        console.error(`Seeder Error: ${error}`);
     }
 };
 
-importData();
+module.exports = seedUsers;
+
+// Run if called directly
+if (require.main === module) {
+    dotenv.config();
+    connectDB();
+    seedUsers().then(() => {
+        console.log('Seeding Complete');
+        process.exit();
+    });
+}

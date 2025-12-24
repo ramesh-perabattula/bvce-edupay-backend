@@ -59,16 +59,7 @@ backend/
         npm start
         ```
 
-## 🔑 Default Users (Seeded)
-
-The `seeder.js` script creates the following default accounts if they do not exist:
-
-| Role | Username | Default Password | Valid Permissions |
-| :--- | :--- | :--- | :--- |
-| **Admin** | `admin` | `adminpassword123` | Full Access |
-| **Exam Head** | `examhead` | `examheadpassword123` | Exam Notifications |
-| **Transport** | `transport` | `transportpassword123` | Transport Fees |
-| **Registrar** | `registrar` | `registrarpassword123` | Student Creation |
+ 
 
 > **Note**: Change these passwords immediately in a production environment.
 

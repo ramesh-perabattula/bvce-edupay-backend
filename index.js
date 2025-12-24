@@ -17,7 +17,7 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(cors({
-    origin: ["https://bvce-edu-pay.vercel.app", "http://localhost:5173"],
+    origin: ["https://bvce-edu-pay.vercel.app", "http://localhost:5173", "https://bvce-edupay-frontend.vercel.app/"],
     credentials: true
 }));
 
